@@ -18,7 +18,7 @@ Requirements
 ------------
 
 -  Python Version > 2.7.9
--  Python 3 is not supported
+-  Python 3 is not supported (use pip2.7 to install on python 3 systems)
 
 Installation
 ---------------
