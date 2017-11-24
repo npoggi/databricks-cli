@@ -26,6 +26,9 @@ Installation
 To install simply run
 ``pip install --upgrade databricks-cli``
 
+Or for your fork
+``pip install --upgrade --editable /local/path/to/repo/databricks-cli``
+
 Then set up authentication using username/password or `authentication token <https://docs.databricks.com/api/latest/authentication.html#token-management>`_. Credentials are stored at ``~/.databrickscfg``.
 
 - ``databricks configure`` (enter hostname/username/password at prompt)
