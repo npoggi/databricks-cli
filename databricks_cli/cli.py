@@ -23,6 +23,7 @@
 
 import click
 
+from databricks_cli.libraries.cli import libraries_group
 from databricks_cli.version import print_version_callback, version
 from databricks_cli.utils import CONTEXT_SETTINGS
 from databricks_cli.configure.cli import configure_cli
@@ -46,3 +47,4 @@ cli.add_command(workspace_group, name='workspace')
 cli.add_command(jobs_group, name='jobs')
 cli.add_command(clusters_group, name='clusters')
 cli.add_command(runs_group, name='runs')
+cli.add_command(libraries_group, name='libraries')

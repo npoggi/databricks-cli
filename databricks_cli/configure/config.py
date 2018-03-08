@@ -21,127 +21,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ConfigParser
-import sys
-import os
-
-from os.path import expanduser, join
-
+import click
 import six
 
-from databricks_cli.utils import error_and_quit
-from databricks_cli.sdk import ApiClient, DbfsService, WorkspaceService, JobsService, ClusterService
-
-DEFAULT_SECTION = 'DEFAULT'
-HOST = 'host'
-USERNAME = 'username'
-PASSWORD = 'password' #  NOQA
-TOKEN = 'token'
+from databricks_cli.configure.provider import DEFAULT_SECTION, get_config_for_profile
+from databricks_cli.utils import InvalidConfigurationError
+from databricks_cli.sdk import ApiClient
 
 
-def require_config(function):
+def provide_api_client(function):
+    """
+    Injects the api_client keyword argument to the wrapped function.
+    All callbacks wrapped by provide_api_client expect the argument ``profile`` to be passed in.
+    """
     @six.wraps(function)
     def decorator(*args, **kwargs):
-        config = DatabricksConfig.fetch_from_fs()
+        profile = kwargs.pop('profile')
+        config = get_config_for_profile(profile)
         if not config.is_valid:
-            error_and_quit(('You haven\'t configured the CLI yet! '
-                            'Please configure by entering `{} configure`').format(sys.argv[0]))
+            raise InvalidConfigurationError(profile)
+        kwargs['api_client'] = _get_api_client(config)
+
         return function(*args, **kwargs)
     decorator.__doc__ = function.__doc__
     return decorator
 
 
-def _get_api_client():
-    conf = DatabricksConfig.fetch_from_fs()
-    if conf.is_valid_with_token:
-        return ApiClient(host=conf.host, token=conf.token)
-    return ApiClient(user=conf.username, password=conf.password, host=conf.host)
+def profile_option(f):
+    return click.option('--profile', required=False, default=DEFAULT_SECTION,
+                        help='CLI connection profile to use.')(f)
 
 
-def get_dbfs_client():
-    api_client = _get_api_client()
-    return DbfsService(api_client)
-
-
-def get_workspace_client():
-    api_client = _get_api_client()
-    return WorkspaceService(api_client)
-
-
-def get_jobs_client():
-    api_client = _get_api_client()
-    return JobsService(api_client)
-
-
-def get_clusters_client():
-    api_client = _get_api_client()
-    return ClusterService(api_client)
-
-
-class DatabricksConfig(object):
-    home = expanduser('~')
-
-    def __init__(self):
-        self._config = ConfigParser.RawConfigParser()
-
-    def overwrite(self):
-        config_path = self.get_path()
-        with open(config_path, 'wb') as cfg:
-            self._config.write(cfg)
-        os.chmod(config_path, 0o600)
-
-    @property
-    def is_valid(self):
-        return self.is_valid_with_password or self.is_valid_with_token
-
-    @property
-    def is_valid_with_password(self):
-        return self._config.has_option(DEFAULT_SECTION, USERNAME) and \
-            self._config.has_option(DEFAULT_SECTION, PASSWORD) and \
-            self._config.has_option(DEFAULT_SECTION, HOST)
-
-    @property
-    def is_valid_with_token(self):
-        return self._config.has_option(DEFAULT_SECTION, TOKEN) and \
-            self._config.has_option(DEFAULT_SECTION, HOST)
-
-    @property
-    def host(self):
-        return self._config.get(DEFAULT_SECTION, HOST) if self.is_valid else None
-
-    @property
-    def username(self):
-        return self._config.get(DEFAULT_SECTION, USERNAME) if self.is_valid_with_password else None
-
-    @property
-    def password(self):
-        return self._config.get(DEFAULT_SECTION, PASSWORD) if self.is_valid_with_password else None
-
-    @property
-    def token(self):
-        return self._config.get(DEFAULT_SECTION, TOKEN) if self.is_valid_with_token else None
-
-    @classmethod
-    def fetch_from_fs(cls):
-        databricks_config = cls()
-        databricks_config._config.read(cls.get_path())
-        return databricks_config
-
-    @classmethod
-    def construct_from_password(cls, host, username, password):
-        databricks_config = cls()
-        databricks_config._config.set(DEFAULT_SECTION, HOST, host)
-        databricks_config._config.set(DEFAULT_SECTION, USERNAME, username)
-        databricks_config._config.set(DEFAULT_SECTION, PASSWORD, password)
-        return databricks_config
-
-    @classmethod
-    def construct_from_token(cls, host, token):
-        databricks_config = cls()
-        databricks_config._config.set(DEFAULT_SECTION, HOST, host)
-        databricks_config._config.set(DEFAULT_SECTION, TOKEN, token)
-        return databricks_config
-
-    @classmethod
-    def get_path(cls):
-        return join(cls.home, '.databrickscfg')
+def _get_api_client(config):
+    if config.is_valid_with_token:
+        return ApiClient(host=config.host, token=config.token)
+    return ApiClient(user=config.username, password=config.password,
+                     host=config.host)

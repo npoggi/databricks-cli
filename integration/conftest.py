@@ -20,28 +20,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from databricks_cli.sdk import JobsService
+import shutil
+import tempfile
+import pytest
+
+import databricks_cli.configure.provider as provider
 
 
-class JobsApi(object):
-    def __init__(self, api_client):
-        self.client = JobsService(api_client)
+def pytest_addoption(parser):
+    parser.addoption('--host', required=True)
+    parser.addoption('--token', required=True)
 
-    def create_job(self, json):
-        return self.client.client.perform_query('POST', '/jobs/create', data=json)
 
-    def list_jobs(self):
-        return self.client.list_jobs()
-
-    def delete_job(self, job_id):
-        return self.client.delete_job(job_id)
-
-    def get_job(self, job_id):
-        return self.client.get_job(job_id)
-
-    def reset_job(self, json):
-        return self.client.client.perform_query('POST', '/jobs/reset', data=json)
-
-    def run_now(self, job_id, jar_params, notebook_params, python_params, spark_submit_params):
-        return self.client.run_now(job_id, jar_params, notebook_params, python_params,
-                                   spark_submit_params)
+@pytest.fixture(autouse=True)
+def mock_conf_dir(request):
+    path = tempfile.mkdtemp()
+    provider._home = path
+    # create config
+    host = request.config.getoption('--host')
+    token = request.config.getoption('--token')
+    config = provider.DatabricksConfig.from_token(host, token)
+    provider.update_and_persist_config(provider.DEFAULT_SECTION, config)
+    yield
+    shutil.rmtree(path)

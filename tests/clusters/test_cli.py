@@ -21,53 +21,70 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint:disable=redefined-outer-name
+
 import json
 import mock
+import pytest
 from tabulate import tabulate
+from click.testing import CliRunner
 
 import databricks_cli.clusters.cli as cli
 from databricks_cli.utils import pretty_format
-from tests.utils import get_callback
+from tests.utils import provide_conf
 
 CREATE_RETURN = {'cluster_id': 'test'}
 CREATE_JSON = '{"name": "test_cluster"}'
 
 
-def test_create_cli_json():
-    with mock.patch('databricks_cli.clusters.cli.create_cluster') as create_cluster_mock:
-        with mock.patch('databricks_cli.jobs.cli.click.echo') as echo_mock:
-            create_cluster_mock.return_value = CREATE_RETURN
-            get_callback(cli.create_cli)(None, CREATE_JSON)
-            assert create_cluster_mock.call_args[0][0] == json.loads(CREATE_JSON)
-            assert echo_mock.call_args[0][0] == pretty_format(CREATE_RETURN)
+@pytest.fixture()
+def cluster_api_mock():
+    with mock.patch('databricks_cli.clusters.cli.ClusterApi') as ClusterApiMock:
+        _cluster_api_mock = mock.MagicMock()
+        ClusterApiMock.return_value = _cluster_api_mock
+        yield _cluster_api_mock
+
+
+@provide_conf
+def test_create_cli_json(cluster_api_mock):
+    with mock.patch('databricks_cli.jobs.cli.click.echo') as echo_mock:
+        cluster_api_mock.create_cluster.return_value = CREATE_RETURN
+        runner = CliRunner()
+        runner.invoke(cli.create_cli, ['--json', CREATE_JSON])
+        assert cluster_api_mock.create_cluster.call_args[0][0] == json.loads(CREATE_JSON)
+        assert echo_mock.call_args[0][0] == pretty_format(CREATE_RETURN)
 
 
 CLUSTER_ID = 'test'
 
 
-def test_start_cli():
-    with mock.patch('databricks_cli.clusters.cli.start_cluster') as start_cluster_mock:
-        get_callback(cli.start_cli)(CLUSTER_ID)
-        assert start_cluster_mock.call_args[0][0] == CLUSTER_ID
+@provide_conf
+def test_start_cli(cluster_api_mock):
+    runner = CliRunner()
+    runner.invoke(cli.start_cli, ['--cluster-id', CLUSTER_ID])
+    assert cluster_api_mock.start_cluster.call_args[0][0] == CLUSTER_ID
 
 
-def test_restart_cli():
-    with mock.patch('databricks_cli.clusters.cli.restart_cluster') as restart_cluster_mock:
-        get_callback(cli.restart_cli)(CLUSTER_ID)
-        assert restart_cluster_mock.call_args[0][0] == CLUSTER_ID
+@provide_conf
+def test_restart_cli(cluster_api_mock):
+    runner = CliRunner()
+    runner.invoke(cli.restart_cli, ['--cluster-id', CLUSTER_ID])
+    assert cluster_api_mock.restart_cluster.call_args[0][0] == CLUSTER_ID
 
 
-def test_delete_cli():
-    with mock.patch('databricks_cli.clusters.cli.delete_cluster') as delete_cluster_mock:
-        get_callback(cli.delete_cli)(CLUSTER_ID)
-        assert delete_cluster_mock.call_args[0][0] == CLUSTER_ID
+@provide_conf
+def test_delete_cli(cluster_api_mock):
+    runner = CliRunner()
+    runner.invoke(cli.delete_cli, ['--cluster-id', CLUSTER_ID])
+    assert cluster_api_mock.delete_cluster.call_args[0][0] == CLUSTER_ID
 
 
-def test_get_cli():
-    with mock.patch('databricks_cli.clusters.cli.get_cluster') as get_cluster_mock:
-        get_cluster_mock.return_value = '{}'
-        get_callback(cli.get_cli)(CLUSTER_ID)
-        assert get_cluster_mock.call_args[0][0] == CLUSTER_ID
+@provide_conf
+def test_get_cli(cluster_api_mock):
+    cluster_api_mock.get_cluster.return_value = '{}'
+    runner = CliRunner()
+    runner.invoke(cli.get_cli, ['--cluster-id', CLUSTER_ID])
+    assert cluster_api_mock.get_cluster.call_args[0][0] == CLUSTER_ID
 
 
 LIST_RETURN = {
@@ -79,18 +96,20 @@ LIST_RETURN = {
 }
 
 
-def test_list_jobs():
-    with mock.patch('databricks_cli.clusters.cli.list_clusters') as list_clusters_mock:
-        with mock.patch('databricks_cli.clusters.cli.click.echo') as echo_mock:
-            list_clusters_mock.return_value = LIST_RETURN
-            get_callback(cli.list_cli)(None)
-            assert echo_mock.call_args[0][0] == \
-                tabulate([('test_id', 'test_name', 'PENDING')], tablefmt='plain')
+@provide_conf
+def test_list_jobs(cluster_api_mock):
+    with mock.patch('databricks_cli.clusters.cli.click.echo') as echo_mock:
+        cluster_api_mock.list_clusters.return_value = LIST_RETURN
+        runner = CliRunner()
+        runner.invoke(cli.list_cli)
+        assert echo_mock.call_args[0][0] == \
+            tabulate([('test_id', 'test_name', 'PENDING')], tablefmt='plain')
 
 
-def test_list_clusters_output_json():
-    with mock.patch('databricks_cli.clusters.cli.list_clusters') as list_clusters_mock:
-        with mock.patch('databricks_cli.clusters.cli.click.echo') as echo_mock:
-            list_clusters_mock.return_value = LIST_RETURN
-            get_callback(cli.list_cli)('json')
-            assert echo_mock.call_args[0][0] == pretty_format(LIST_RETURN)
+@provide_conf
+def test_list_clusters_output_json(cluster_api_mock):
+    with mock.patch('databricks_cli.clusters.cli.click.echo') as echo_mock:
+        cluster_api_mock.list_clusters.return_value = LIST_RETURN
+        runner = CliRunner()
+        runner.invoke(cli.list_cli, ['--output', 'json'])
+        assert echo_mock.call_args[0][0] == pretty_format(LIST_RETURN)

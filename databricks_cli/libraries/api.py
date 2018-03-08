@@ -20,28 +20,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from databricks_cli.sdk import JobsService
+
+from databricks_cli.sdk import ManagedLibraryService
 
 
-class JobsApi(object):
+class LibrariesApi(object):
     def __init__(self, api_client):
-        self.client = JobsService(api_client)
+        self.client = ManagedLibraryService(api_client)
 
-    def create_job(self, json):
-        return self.client.client.perform_query('POST', '/jobs/create', data=json)
+    def all_cluster_statuses(self):
+        return self.client.all_cluster_statuses()
 
-    def list_jobs(self):
-        return self.client.list_jobs()
+    def cluster_status(self, cluster_id):
+        return self.client.cluster_status(cluster_id)
 
-    def delete_job(self, job_id):
-        return self.client.delete_job(job_id)
+    def install_libraries(self, cluster_id, libraries):
+        return self.client.install_libraries(cluster_id, libraries)
 
-    def get_job(self, job_id):
-        return self.client.get_job(job_id)
-
-    def reset_job(self, json):
-        return self.client.client.perform_query('POST', '/jobs/reset', data=json)
-
-    def run_now(self, job_id, jar_params, notebook_params, python_params, spark_submit_params):
-        return self.client.run_now(job_id, jar_params, notebook_params, python_params,
-                                   spark_submit_params)
+    def uninstall_libraries(self, cluster_id, libraries):
+        return self.client.uninstall_libraries(cluster_id, libraries)

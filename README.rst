@@ -34,6 +34,9 @@ Then set up authentication using username/password or `authentication token <htt
 - ``databricks configure`` (enter hostname/username/password at prompt)
 - ``databricks configure --token`` (enter hostname/auth-token at prompt)
 
+Multiple connection profiles are also supported with ``databricks configure --profile <profile> [--token]``.
+The connection profile can be used as such: ``databricks workspace ls --profile <profile>``.
+
 Then you're all set to go! To test that your authentication information is working, try a quick test like
 ``databricks workspace ls``.
 
@@ -52,7 +55,7 @@ Workspace CLI Examples
 The implemented commands for the Workspace CLI can be listed by running ``databricks workspace -h``.
 Commands are run by appending them to ``databricks workspace``. To make it easier to use the workspace
 CLI, feel free to alias ``databricks workspace`` to something shorter. For more information
-reference `Aliasing Command Groups <#aliasing-command-groups>`_.
+reference `Aliasing Command Groups section <#aliasing-command-groups>`_.
 
 .. code::
 
@@ -232,7 +235,8 @@ To find a job by name
 
 Copying a job
 ^^^^^^^^^^^^^^^^^^^^^^^^
-This example requires the program `jq <#jq>`_.
+This example requires the program ``jq``.
+See `jq section <#jq>`_ for more details.
 
 .. code::
 
@@ -291,8 +295,48 @@ Listing node types
 
     databricks clusters list-node-types
 
+Libraries CLI
+--------------
 
-.. _alias_databricks_cli:
+You run library subcommands by appending them to ``databricks libraries``.
+
+.. code::
+
+  $ databricks libraries -h
+  Usage: databricks libraries [OPTIONS] COMMAND [ARGS]...
+
+    Utility to interact with libraries.
+
+    This is a wrapper around the libraries API
+    (https://docs.databricks.com/api/latest/libraries.html).
+
+  Options:
+    -v, --version  [VERSION]
+    -h, --help     Show this message and exit.
+
+  Commands:
+    all-cluster-statuses  Get the status of all libraries.
+    cluster-status        Get the status of all libraries for a specified
+                          cluster.
+    install               Install a library on a cluster.
+    list                  Shortcut to `all-cluster-statuses` or `cluster-
+                          status`.
+    uninstall             Uninstall a library on a cluster.
+
+Install a JAR from DBFS
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code::
+
+    databricks libraries install --cluster-id $CLUSTER_ID --jar dbfs:/test-dir/test.jar
+
+List library statuses for a cluster
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code::
+
+    databricks libraries list --cluster-id $CLUSTER_ID
+
 
 Aliasing Command Groups
 --------------------------
@@ -301,8 +345,6 @@ Sometimes it can be inconvenient to prefix each CLI invocation with the name of 
 command groups to shorter commands. For example to shorten ``databricks workspace ls`` to ``dw ls`` in the
 Bourne again shell, you can add ``alias dw="databricks workspace"`` to the appropriate bash profile. Typically,
 this file is located at ``~/.bash_profile``.
-
-.. _jq:
 
 jq
 ---
@@ -321,7 +363,7 @@ Using Docker
 .. code::
 
     # build image
-    docker build -t docker build -t databricks-cli .
+    docker build -t databricks-cli .
 
     # run container
     docker run -it databricks-cli

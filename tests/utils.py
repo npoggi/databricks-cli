@@ -20,14 +20,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import decorator
+from click.testing import CliRunner
+
+from databricks_cli.configure.provider import DatabricksConfig, DEFAULT_SECTION, \
+    update_and_persist_config
 
 
-def get_callback(command):
+def provide_conf(test):
+    def wrapper(test, *args, **kwargs):
+        config = DatabricksConfig.from_token('test-host', 'test-token')
+        update_and_persist_config(DEFAULT_SECTION, config)
+        return test(*args, **kwargs)
+    return decorator.decorator(wrapper, test)
+
+
+def assert_cli_output(actual, expected):
     """
-    Convenience function to reach into a Command object's callback and
-    to unwrap the decorators
+    Take runner stdout and assert it's value against an expected string. This just means appending
+    a newline to the expected string since ``click.echo`` adds a newline to the output.
+
+    >>> runner = CliRunner()
+    >>> res = runner.invoke(cli.list_cli, ['--cluster-id', TEST_CLUSTER_ID])
+    >>> assert_cli_output(res.output, 'EXPECTED-OUTPUT')
     """
-    func = command.callback
-    while hasattr(func, '__wrapped__'):
-        func = func.__wrapped__
-    return func
+    assert actual == expected + '\n'
+
+
+def invoke_cli_runner(*args, **kwargs):
+    """
+    Helper method to invoke the CliRunner while asserting that the exit code is actually 0.
+    """
+    res = CliRunner().invoke(*args, **kwargs)
+    assert res.exit_code == 0, 'Exit code was not 0. Output is: {}'.format(res.output)
+    return res
