@@ -21,12 +21,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version = '0.7.1.dev0' #  NOQA
+from databricks_cli.sdk.api_client import ApiClient
 
 
-def print_version_callback(ctx, param, value): #  NOQA
-    import click
-    if not value or ctx.resilient_parsing:
-        return
-    click.echo('Version {}'.format(version))
-    ctx.exit()
+def test_api_client_constructor():
+    """This used to throw when we converted <user>:<password> to base64 encoded string."""
+    client = ApiClient(user='apple', password='banana', host='https://databricks.com')
+    # echo -n "apple:banana" | base64
+    assert client.default_headers['Authorization'] == 'Basic YXBwbGU6YmFuYW5h'

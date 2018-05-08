@@ -23,6 +23,8 @@
 
 from click import ParamType, Option, MissingParameter, UsageError
 
+from databricks_cli.configure.provider import DEFAULT_SECTION
+
 
 class OutputClickType(ParamType):
     name = 'FORMAT'
@@ -67,6 +69,21 @@ class ClusterIdClickType(ParamType):
             'https://*.cloud.databricks.com/#/setting/clusters/$CLUSTER_ID/configuration.')
 
 
+class SecretScopeClickType(ParamType):
+    name = 'SCOPE'
+    help = 'The name of the secret scope.'
+
+
+class SecretKeyClickType(ParamType):
+    name = 'KEY'
+    help = 'The name of the secret key.'
+
+
+class SecretPrincipalClickType(ParamType):
+    name = 'PRINCIPAL'
+    help = 'The name of the principal.'
+
+
 class OneOfOption(Option):
     def __init__(self, *args, **kwargs):
         self.one_of = kwargs.pop('one_of')
@@ -79,3 +96,19 @@ class OneOfOption(Option):
         if len(cleaned_opts.intersection(set(self.one_of))) > 1:
             raise UsageError('Only one of {} should be provided.'.format(self.one_of))
         return super(OneOfOption, self).handle_parse_result(ctx, opts, args)
+
+
+class ContextObject(object):
+    def __init__(self):
+        self._profile = None
+
+    def set_profile(self, profile):
+        if self._profile is not None:
+            raise UsageError('--profile can only be provided once. '
+                             'The profiles [{}, {}] were provided.'.format(self._profile, profile))
+        self._profile = profile
+
+    def get_profile(self):
+        if self._profile is None:
+            return DEFAULT_SECTION
+        return self._profile

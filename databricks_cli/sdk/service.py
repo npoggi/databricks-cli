@@ -352,7 +352,7 @@ class ClusterService(object):
         _data = {}
     
         return self.client.perform_query('GET', '/clusters/list-zones', data=_data)
-     
+
 
 class ManagedLibraryService(object):
     def __init__(self, client):
@@ -521,4 +521,141 @@ class WorkspaceService(object):
             _data['path'] = path
         return self.client.perform_query('GET', '/workspace/get-status', data=_data)
      
+
+class SecretService(object):
+    def __init__(self, client):
+        self.client = client
+
+    def create_scope(self, scope, initial_manage_principal=None):
+        _data = {}
+        if scope is not None:
+            _data['scope'] = scope
+        if initial_manage_principal is not None:
+            _data['initial_manage_principal'] = initial_manage_principal
+        return self.client.perform_query('POST', '/secrets/scopes/create', data=_data)
+    
+    def delete_scope(self, scope):
+        _data = {}
+        if scope is not None:
+            _data['scope'] = scope
+        return self.client.perform_query('POST', '/secrets/scopes/delete', data=_data)
+    
+    def list_scopes(self):
+        _data = {}
+    
+        return self.client.perform_query('GET', '/secrets/scopes/list', data=_data)
+    
+    def put_secret(self, scope, key, string_value=None, bytes_value=None):
+        _data = {}
+        if scope is not None:
+            _data['scope'] = scope
+        if key is not None:
+            _data['key'] = key
+        if string_value is not None:
+            _data['string_value'] = string_value
+        if bytes_value is not None:
+            _data['bytes_value'] = bytes_value
+        return self.client.perform_query('POST', '/secrets/put', data=_data)
+    
+    def delete_secret(self, scope, key):
+        _data = {}
+        if scope is not None:
+            _data['scope'] = scope
+        if key is not None:
+            _data['key'] = key
+        return self.client.perform_query('POST', '/secrets/delete', data=_data)
+    
+    def list_secrets(self, scope):
+        _data = {}
+        if scope is not None:
+            _data['scope'] = scope
+        return self.client.perform_query('GET', '/secrets/list', data=_data)
+    
+    def put_acl(self, scope, principal, permission):
+        _data = {}
+        if scope is not None:
+            _data['scope'] = scope
+        if principal is not None:
+            _data['principal'] = principal
+        if permission is not None:
+            _data['permission'] = permission
+        return self.client.perform_query('POST', '/secrets/acls/put', data=_data)
+    
+    def delete_acl(self, scope, principal):
+        _data = {}
+        if scope is not None:
+            _data['scope'] = scope
+        if principal is not None:
+            _data['principal'] = principal
+        return self.client.perform_query('POST', '/secrets/acls/delete', data=_data)
+    
+    def list_acls(self, scope):
+        _data = {}
+        if scope is not None:
+            _data['scope'] = scope
+        return self.client.perform_query('GET', '/secrets/acls/list', data=_data)
+    
+    def get_acl(self, scope, principal):
+        _data = {}
+        if scope is not None:
+            _data['scope'] = scope
+        if principal is not None:
+            _data['principal'] = principal
+        return self.client.perform_query('GET', '/secrets/acls/get', data=_data)
+
+
+class GroupsService(object):
+    def __init__(self, client):
+        self.client = client
+
+    def create_group(self, group_name):
+        _data = {}
+        if group_name is not None:
+            _data['group_name'] = group_name
+        return self.client.perform_query('POST', '/groups/create', data=_data)
+    
+    def add_to_group(self, parent_name, user_name=None, group_name=None):
+        _data = {}
+        if user_name is not None:
+            _data['user_name'] = user_name
+        if group_name is not None:
+            _data['group_name'] = group_name
+        if parent_name is not None:
+            _data['parent_name'] = parent_name
+        return self.client.perform_query('POST', '/groups/add-member', data=_data)
+    
+    def remove_from_group(self, parent_name, user_name=None, group_name=None):
+        _data = {}
+        if user_name is not None:
+            _data['user_name'] = user_name
+        if group_name is not None:
+            _data['group_name'] = group_name
+        if parent_name is not None:
+            _data['parent_name'] = parent_name
+        return self.client.perform_query('POST', '/groups/remove-member', data=_data)
+    
+    def get_groups(self):
+        _data = {}
+    
+        return self.client.perform_query('GET', '/groups/list', data=_data)
+    
+    def get_group_members(self, group_name):
+        _data = {}
+        if group_name is not None:
+            _data['group_name'] = group_name
+        return self.client.perform_query('GET', '/groups/list-members', data=_data)
+    
+    def remove_group(self, group_name):
+        _data = {}
+        if group_name is not None:
+            _data['group_name'] = group_name
+        return self.client.perform_query('POST', '/groups/delete', data=_data)
+    
+    def get_groups_for_principal(self, user_name=None, group_name=None):
+        _data = {}
+        if user_name is not None:
+            _data['user_name'] = user_name
+        if group_name is not None:
+            _data['group_name'] = group_name
+        return self.client.perform_query('GET', '/groups/list-parents', data=_data)
 
